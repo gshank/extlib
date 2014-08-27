@@ -1,0 +1,62 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+=head1 update-packages
+
+This script does a full install to local-lib, then updates the specified
+packages and re-builds the extlib.json, 02packages.details.txt.gz, and
+distfiles.txt.
+
+   cpanm -L extlib --save-dists Crypt::SaltedHash
+
+=cut
+
+# use extlib/eblib as a build library
+use Cwd 'abs_path';
+use File::Spec::Functions qw(catpath splitpath);
+use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+
+use Extlib;
+
+my @modules = @ARGV;
+
+die "You must specify modules to update" unless @modules;
+
+use constant { SUCCESS => 0, INFO => 1, WARN => 2, ERROR => 3 };
+my $extlib = Extlib->new(
+    path => 'extlib',
+    modspec_file => 'extlib/etc/modules.yaml',
+    mirror_meta_file => 'extlib/etc/extlib.json',
+    cpanm_executable => 'extlib/cpanm',
+);
+
+
+$extlib->print("Verifying that all modules are installed\n", INFO);
+
+my $errors = $extlib->check_installed_against_mirror_meta;
+
+if ( $errors ) {
+    $extlib->print("Installed modules did not match mirror meta. Performing full install.\n", INFO);
+    $extlib->install_full; # install all modules using reinstall, from our local mirror
+    $errors = $extlib->check_installed_against_mirror_meta;
+}
+
+if ( $errors ) {
+    $extlib->print("Errors may have occurred when installing. Fix before proceeding\n", ERROR );
+    exit;
+}
+else {
+    $extlib->print("Verified that all modules are installed\n", SUCCESS);
+}
+
+$extlib->install_for_update_individually( modules => [@modules] );
+
+$extlib->printf("Complete! Modules were installed into %s\n", $extlib->{path}, SUCCESS);
+
+$extlib->check_meta_for_update( 'verbose' );
+
+$extlib->print("Check above information for validity. If good, execute extlib/build-metadata & extlib/verify-update\n", INFO);
+$extlib->print("If not good, modify modules.yaml and run extlib/update-package and extlib/check-update until it's correct\n", INFO);
+

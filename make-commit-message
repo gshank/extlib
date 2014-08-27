@@ -1,0 +1,114 @@
+#!/usr/bin/perl
+
+=head1 DESCRIPTION
+
+Helper script to build git commit message when updating extlib source
+packages.
+
+=head1 SYNOPSIS
+
+# After you've staged the commit for source packages
+git diff --name-status --cached | extlib/build-commit-message > /tmp/commit.txt
+
+git commit -F /tmp/commmit.txt
+
+=cut
+
+use strict;
+use warnings;
+use 5.10.0;
+use List::MoreUtils qw(part);
+use IPC::System::Simple ('capture', 'system');
+use IO::All;
+
+# Get path and change to it
+use Cwd 'abs_path';
+use File::Spec::Functions qw(splitpath);
+my ($vol, $dir, $file) = splitpath(abs_path($0));
+my ($PATH) = ( "$vol$dir" =~ m{^(.+)/$} );
+chdir($PATH);
+
+say "doing a git add of the extlib src";
+
+system( 'git',  'add',  '-A',
+        'src/authors/*.tar.gz',
+        'src/authors/*.tgz',
+        'src/modules/02packages.details.txt.gz',
+        'etc/distfiles.txt',
+        'etc/extlib.json',
+        'etc/modules.yaml' );
+
+say "doing git diff";
+my $output = capture("git diff --name-status --cached");
+
+unless ( $output ) {
+    say "Nothing from git diff, quitting.";
+    exit;
+}
+
+my @lines = split(/\n/, $output);
+
+my %modules;
+
+say "looping through diff output, parsing lines";
+# extlib/src/authors/id/A/AB/ABW/Template-Toolkit-2.25.tar.gz
+foreach my $line (@lines) {
+    chomp($line);
+say $line;
+
+    next unless $line =~ m{extlib/src/authors/id};
+    $line =~ m{
+        ^(A|D)\t
+        extlib/src/authors/id/[A-Z]/[A-Z]{2}/[A-Z]+/
+        (.+?)-
+        ([^-]+)
+        \.(?:tar\.gz|tgz|zip)
+        $
+    }x or die "failed to parse line $line";
+
+
+    my ($op, $name, $version) = ($1, $2, $3);
+
+    $modules{$name} ||= {
+        added   => undef,
+        deleted => undef,
+    };
+
+    if ($op eq 'A') {
+        $modules{$name}{added} = $version;
+    } elsif ($op eq 'D') {
+        $modules{$name}{deleted} = $version;
+    }
+}
+
+my ($added, $deleted, $upgraded) = part {
+      (not $modules{$_}{deleted}) ? 0
+    : (not $modules{$_}{added})   ? 1
+                                  : 2
+} sort keys %modules;
+
+my $commit = "Updated modules in extlib\n\n";
+
+foreach my $module (@$added) {
+    my $version = $modules{$module}{added};
+    $commit .= "  ADDED: $module $version\n";
+}
+
+foreach my $module (@$deleted) {
+    $commit .=  "  DELETED: $module\n";
+}
+
+foreach my $module (@$upgraded) {
+    my $old_version = $modules{$module}{deleted};
+    my $new_version = $modules{$module}{added};
+    $commit .= "  UPGRADED: $module $old_version => $new_version\n";
+}
+
+$commit > io( '/tmp/commit.txt' );
+
+say $commit;
+
+say "\n\n*** If commit message looks okay, do:";
+say "git commit -F /tmp/commit.txt";
+
+exit 0;

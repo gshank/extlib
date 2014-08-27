@@ -1,0 +1,52 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+=head1 build-metadata
+
+Using the packages installed by update-src or update-package,
+creates the metadata and 02packages.detasil.txt.gz files.
+
+=cut
+
+# use extlib/eblib as a build library
+use Cwd 'abs_path';
+use File::Spec::Functions qw(catpath splitpath);
+use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+
+use Extlib;;
+use File::Path ('remove_tree');
+
+use constant { SUCCESS => 0, INFO => 1, WARN => 2, ERROR => 3 };
+my $extlib = Extlib->new(
+    path => 'extlib',
+    modspec_file => 'extlib/etc/modules.yaml',
+    mirror_meta_file => 'extlib/etc/extlib.json',
+    cpanm_executable => 'extlib/cpanm',
+);
+
+
+$extlib->print("Updating metadata\n", INFO);
+
+# Gather the medadata from the installed packages, and remove those
+# that conflict with our pre-req'd version (i.e. Catalyst)
+my ( $installs, $to_remove ) = $extlib->check_meta_for_update;
+$extlib->build_mirror_meta_and_clean( $installs, $to_remove );;
+
+# Remove archives for extlib/src/authors which we aren't using now.
+$extlib->clean_local_mirror;
+
+# index used to create 02packages.details.txt.gz
+$extlib->build_index;
+# build extlib/src/modules/02packages.details.txt.gz, which allows us
+# to use the src directory as a local cpan mirror
+$extlib->build_packages_details;
+
+# distfiles.txt currently not used in build process, but saving as
+# a bit of data.
+$extlib->build_distfiles;
+
+$extlib->printf("Complete! Metadata was stored, and mirror has been updated.\n", SUCCESS);
+$extlib->print("Now execute extlib/verify-update to reinstall and verify install...\n", INFO );
+

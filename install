@@ -1,0 +1,85 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use IPC::System::Simple ('system');
+use IO::All;
+use Getopt::Long;
+use Cwd 'abs_path';
+use File::Spec::Functions qw(catpath splitpath);
+use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+
+=head1 install
+
+This script installs the modules that have been put in our local lib.
+
+The extlib/etc/extlib.json is used to determine what to install.
+Modules are required by entering in extlib/etc/modules.yaml.
+
+=cut
+
+my ($vol, $dir, $file) = splitpath(abs_path($0));
+my ($PATH) = ( "$vol$dir" =~ m{^(.+)/$} );
+
+# --quiet and --notest are not currently supported, but may be in the future
+my $NOTEST       = 0;
+my $QUIET        = 0;
+my $FORCE_RUN    = 0;
+my $UPDATE_CHECK = 0;
+my $VERBOSE      = 0;
+my $RERUN        = 0; # this is only to prevent rerunning the script more than once
+GetOptions(
+    'quiet'        => \$QUIET,
+    'notest'       => \$NOTEST,
+    'force-run'    => \$FORCE_RUN,
+    'update-check' => \$UPDATE_CHECK,
+    'verbose'      => \$VERBOSE,
+    'rerun'        => \$RERUN,
+);
+
+# install packages needed by Extlib code
+# Get path info
+unless ( eval { require Extlib } ) {
+    if ( $RERUN ) {
+        warn "Unable to load Extlib: $@";
+        exit;
+    }
+    system( "$PATH/build-eblib" );
+    # need to start script over from beginning in order to have new packages in lib
+    exec($^X, $0, @ARGV, '--rerun');
+    exit;
+}
+
+require Extlib;;
+my $extlib = Extlib->new(
+    path => 'extlib',
+    modspec_file => 'extlib/etc/modules.yaml',
+    mirror_meta_file => 'extlib/etc/extlib.json',
+    cpanm_executable => 'extlib/cpanm',
+    last_run_file => 'extlib/var/last-install-results.json',
+);
+
+my $needs_install = $extlib->needs_install;
+
+if ($UPDATE_CHECK) {
+    exit ($needs_install ? 1 : 0);
+}
+
+if ( $extlib->needs_install || $FORCE_RUN ) {
+
+    $extlib->install;
+
+    if ( $VERBOSE ) {
+        # some modules won't be installed because they're in the system directory
+        my $uninstalled = $extlib->meta_needs_install;
+        if ( scalar @$uninstalled ) {
+            $extlib->print("Not all modules installed successfully\n", 3);
+            $extlib->print( join(', ', @$uninstalled ) );
+        }
+    }
+    $extlib->save_last_run;
+    $extlib->print("Extlib updated.\n", 0);
+}
+else {
+    $extlib->print("Extlib does not need updating.\n", 0);
+}

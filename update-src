@@ -1,0 +1,46 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+=head1 update-src
+
+This script executes an update method in Extlib
+
+The module.yaml is used for specifying the required modules.
+
+In order to gather the metadata and create the extlib.json file,
+an actual install is run into extlib/lib. Then the code gathers
+the metadata from the installed packages, from the architecture .meta
+directory, such as: extlib/lib/perl5/x86_64-linux-gnu-thread-multi/.meta
+
+=cut
+
+# use extlib/eblib as a build library
+use Cwd 'abs_path';
+use File::Spec::Functions qw(catpath splitpath);
+use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+
+use Extlib;;
+use File::Path ('remove_tree');
+
+use constant { SUCCESS => 0, INFO => 1, WARN => 2, ERROR => 3 };
+my $extlib = Extlib->new(
+    path => 'extlib',
+    modspec_file => 'extlib/etc/modules.yaml',
+    mirror_meta_file => 'extlib/etc/extlib.json',
+    cpanm_executable => 'extlib/cpanm',
+);
+
+
+$extlib->print("Updating modules\n", INFO);
+
+remove_tree( './extlib/lib/perl5' );
+$extlib->install_for_update;
+$extlib->printf("Complete! Modules were installed into %s\n", $extlib->{path}, SUCCESS);
+
+$extlib->check_meta_for_update( 'verbose' );
+
+$extlib->print("Check above information for validity. If good, execute extlib/build-metadata & extlib/verify-update\n", INFO);
+$extlib->print("If not good, modify modules.yaml and run extlib/update-package and extlib/check-update until it's correct\n", INFO);
+

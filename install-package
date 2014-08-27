@@ -1,0 +1,34 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+=head1 install-package
+
+This script installs modules passed in on the command line.
+
+The equivalent can be done by:
+
+   cpanm -L extlib --mirror-only --mirror ~/<repo_path>/extlib/src Crypt::SaltedHash
+
+=cut
+
+# use extlib/eblib as a build library
+use Cwd 'abs_path';
+use File::Spec::Functions qw(catpath splitpath);
+use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+
+my @modules = @ARGV;
+die "You must specify modules to update" unless @modules;
+
+use Extlib;;
+my $extlib = Extlib->new(
+    path => 'extlib',
+    modspec_file => 'extlib/etc/modules.yaml',
+    mirror_meta_file => 'extlib/etc/extlib.json',
+    cpanm_executable => 'extlib/cpanm',
+);
+
+
+$extlib->install( modules => [@modules] );
+

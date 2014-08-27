@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+=head1 update-package
+
+Does the equivalent of re-running update-src, except for just one
+distribution. Generally this would be done if some error happened on
+update-src which has been corrected, and you don't want to re-run
+the whole thing, or if you don't want to upgrade the whole local
+lib.
+
+=cut
+
+# use extlib/eblib as a build library
+use Cwd 'abs_path';
+use File::Spec::Functions qw(catpath splitpath);
+use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+
+use Extlib;;
+use File::Path ('remove_tree');
+
+use constant { SUCCESS => 0, INFO => 1, WARN => 2, ERROR => 3 };
+my $extlib = Extlib->new(
+    path => 'extlib',
+    modspec_file => 'extlib/etc/modules.yaml',
+    mirror_meta_file => 'extlib/etc/extlib.json',
+    cpanm_executable => 'extlib/cpanm',
+);
+
+my @modules = @ARGV;
+die "Must specify packages" unless scalar @modules;
+
+$extlib->print("Updating package(s)\n", INFO);
+
+$extlib->install_for_update_individually( modules => \@modules );
+
+$extlib->print("Try check-update if this worked\n", INFO);
+

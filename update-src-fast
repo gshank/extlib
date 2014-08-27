@@ -1,0 +1,60 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+=head1 update-src-fast
+
+This script installs the requested packages to the extlib local lib, then
+selectively gathers the meta for the packages and updates the existing extlib.json
+file. This will not remove packages that are no longer needed, because for that
+we need a full install.
+
+=cut
+
+# use extlib/eblib as a build library
+use Cwd 'abs_path';
+use File::Spec::Functions qw(catpath splitpath);
+use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+
+use Extlib;
+
+my @modules = @ARGV;
+
+die "You must specify modules to update" unless @modules;
+
+use constant { SUCCESS => 0, INFO => 1, WARN => 2, ERROR => 3 };
+my $extlib = Extlib->new(
+    path => 'extlib',
+    modspec_file => 'extlib/etc/modules.yaml',
+    mirror_meta_file => 'extlib/etc/extlib.json',
+    cpanm_executable => 'extlib/cpanm',
+);
+
+
+my $installed = $extlib->install_for_update_individually( modules => [@modules] );
+
+unless ($installed ) {
+    $extlib->print("No packages were installed. Aborting.\n", ERROR);
+    exit;
+}
+$extlib->printf("Modules were installed into %s\n", $extlib->{path}, SUCCESS);
+
+$extlib->update_metadata_fast( modules => [@modules] );
+$extlib->print("Metadata updated\n", SUCCESS);
+
+# Remove archives for extlib/src/authors which we aren't using now.
+$extlib->clean_local_mirror;
+
+# index used to create 02packages.details.txt.gz
+$extlib->build_index;
+# build extlib/src/modules/02packages.details.txt.gz, which allows us
+# to use the src directory as a local cpan mirror
+$extlib->build_packages_details;
+
+# distfiles.txt currently not used in build process, but saving as
+# a bit of data.
+$extlib->build_distfiles;
+
+$extlib->print("If it looks like everything succeeded, run extlib/make-commit-message\n", INFO);
+
