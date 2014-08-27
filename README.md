@@ -1,6 +1,6 @@
-* Extlib
+# Extlib
 
-** Overview
+## Overview
 
 This document describes how to set up a local Perl library that holds
 snapshotted and patched versions of various CPAN modules, ensuring
@@ -13,13 +13,13 @@ This uses methods taken from Carton. You should probably use that unless
 you need the features in Extlib.
 
 
-** Howto: Quickstart
+## Howto: Quickstart
 
     # Install to extlib/
     ./extlib/install
 
 
-** Howto: Do a full clean install
+## Howto: Do a full clean install
 
     # Clear old directories
     rm -rf extlib/{var,bin,lib,man} OR make extlib-clean-all
@@ -28,7 +28,7 @@ you need the features in Extlib.
     ./extlib/install
 
 
-** Howto: Update all (unpinned) packages to latest CPAN version
+## Howto: Update all (unpinned) packages to latest CPAN version
 
 Note: This process *at best* will require you to install all the
 the packages in the extlib multiple times. Do not do this expecting
@@ -79,7 +79,7 @@ how to do that. It's probably a lot less work.
     ./extlib/make-commit-message
 
 
-** Howto: Update or add a single package to latest CPAN version without updating
+## Howto: Update or add a single package to latest CPAN version without updating
   everything.
   Note: this will update its dependencies too...
 
@@ -118,7 +118,7 @@ in this process.  If need be, then cherry pick that into your branch.
     ./extlib/make-commit-message
 
 
-** Committing to source control
+## Committing to source control
 
     # use the provided script. It will do the git add, create the
     # commit message, and prompt you to do the actually commit.
@@ -126,7 +126,7 @@ in this process.  If need be, then cherry pick that into your branch.
     ./extlib/make-commit-message
 
 
-** Howto: Pin a CPAN package to a specific version
+## Howto: Pin a CPAN package to a specific version
 
     In extlib/etc/modules.yaml, add a 'path:' entry, e.g.:
 
@@ -140,7 +140,7 @@ help when someone in the future tries to decide if it's safe to unpin the
 package yet or not.
 
 
-** Howto: use a patched version or a local distribution (not on CPAN)
+## Howto: use a patched version or a local distribution (not on CPAN)
 
 Find the source package, and untar it somewhere.
 Apply your patches, and make sure to change the version anywhere it
@@ -181,7 +181,7 @@ eliminates the our overhead in maintaining (what are essentially) forked
 packages.
 
 
-** Reference: extlib/ directory
+## Reference: extlib/ directory
 
 Description of the layout and files of extlib/:
 
@@ -231,7 +231,7 @@ Description of the layout and files of extlib/:
       changes to extlib/etc/distfiles.txt
 
 
-** Reference: extlib/etc/modules.yaml
+## Reference: extlib/etc/modules.yaml
 
 A YAML file that holds all the modules we need to run our
 application.  A module can have extra metadata needed to
