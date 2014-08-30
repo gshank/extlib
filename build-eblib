@@ -2,13 +2,12 @@
 use strict;
 use warnings;
 
+##================================================================
 use Cwd 'abs_path';
-use File::Spec::Functions qw(catpath splitpath);
+use File::Spec::Functions ('catpath', 'splitpath');
 use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
-
-# Get path info
-my ($vol, $dir, $file) = splitpath(abs_path($0));
-my ($PATH) = ( "$vol$dir" =~ m{^(.+)/$} );
+my $PATH = (splitpath(abs_path $0))[0, 1];
+##================================================================
 
 my @modules = (
    'CPAN::Meta',

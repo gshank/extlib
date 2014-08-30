@@ -12,10 +12,14 @@ we need a full install.
 
 =cut
 
-# use extlib/eblib as a build library
+##================================================================
 use Cwd 'abs_path';
-use File::Spec::Functions qw(catpath splitpath);
+use File::Spec::Functions ('catpath', 'splitpath');
 use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+my $PATH = (splitpath(abs_path $0))[0, 1];
+require "${PATH}extlib_config.pm";
+my $Config = extlib_config->Config;
+##================================================================
 
 use Extlib;
 
@@ -24,13 +28,7 @@ my @modules = @ARGV;
 die "You must specify modules to update" unless @modules;
 
 use constant { SUCCESS => 0, INFO => 1, WARN => 2, ERROR => 3 };
-my $extlib = Extlib->new(
-    path => 'extlib',
-    modspec_file => 'extlib/etc/modules.yaml',
-    mirror_meta_file => 'extlib/etc/extlib.json',
-    cpanm_executable => 'extlib/cpanm',
-);
-
+my $extlib = Extlib->new( %$Config );
 
 my $installed = $extlib->install_for_update_individually( modules => [@modules] );
 

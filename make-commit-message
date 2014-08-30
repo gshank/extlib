@@ -16,16 +16,21 @@ git commit -F /tmp/commmit.txt
 
 use strict;
 use warnings;
-use 5.10.0;
+use v5.10;
+
+##================================================================
+use Cwd 'abs_path';
+use File::Spec::Functions ('catpath', 'splitpath');
+use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+my $PATH = (splitpath(abs_path $0))[0, 1];
+require "${PATH}extlib_config.pm";
+my $Config = extlib_config->Config;
+##================================================================
+
 use List::MoreUtils qw(part);
 use IPC::System::Simple ('capture', 'system');
 use IO::All;
 
-# Get path and change to it
-use Cwd 'abs_path';
-use File::Spec::Functions qw(splitpath);
-my ($vol, $dir, $file) = splitpath(abs_path($0));
-my ($PATH) = ( "$vol$dir" =~ m{^(.+)/$} );
 chdir($PATH);
 
 say "doing a git add of the extlib src";

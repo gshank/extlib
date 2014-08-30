@@ -13,18 +13,17 @@ The equivalent can be done by:
 
 =cut
 
-# use extlib/eblib as a build library
+##================================================================
 use Cwd 'abs_path';
-use File::Spec::Functions qw(catpath splitpath);
+use File::Spec::Functions ('catpath', 'splitpath');
 use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+my $PATH = (splitpath(abs_path $0))[0, 1];
+require "${PATH}extlib_config.pm";
+my $Config = extlib_config->Config;
+##================================================================
 
 use Extlib;;
-my $extlib = Extlib->new(
-    path => 'extlib',
-    modspec_file => 'extlib/etc/modules.yaml',
-    mirror_meta_file => 'extlib/etc/extlib.json',
-    cpanm_executable => 'extlib/cpanm',
-);
+my $extlib = Extlib->new( %$Config );
 
 my $modules = $extlib->meta_needs_install;
 $extlib->install( modules => $modules );
