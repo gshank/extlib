@@ -1,3 +1,3 @@
-man
-bin
-lib
+/man
+/bin
+/lib
