@@ -7,7 +7,7 @@ use IO::All;
 use Getopt::Long;
 use Cwd 'abs_path';
 use File::Spec::Functions qw(catpath splitpath);
-use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+use lib catpath((splitpath(abs_path $0))[0, 1], 'blib/lib/perl5');
 
 =head1 install
 
@@ -21,7 +21,7 @@ Modules are required by entering in extlib/etc/modules.yaml.
 ##================================================================
 use Cwd 'abs_path';
 use File::Spec::Functions ('catpath', 'splitpath');
-use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+use lib catpath((splitpath(abs_path $0))[0, 1], 'blib/lib/perl5');
 my $PATH = (splitpath(abs_path $0))[0, 1];
 require "${PATH}extlib_config.pm";
 my $Config = extlib_config->Config;
@@ -50,7 +50,7 @@ unless ( eval { require Extlib } ) {
         warn "Unable to load Extlib: $@";
         exit;
     }
-    system( "$PATH/build-eblib" );
+    system( "$PATH/build-blib" );
     # need to start script over from beginning in order to have new packages in lib
     exec($^X, $0, @ARGV, '--rerun');
     exit;
@@ -67,7 +67,7 @@ if ($UPDATE_CHECK) {
 
 if ( $extlib->needs_install || $FORCE_RUN ) {
 
-    $extlib->install;
+    my $rc = $extlib->install;
 
     if ( $VERBOSE ) {
         # some modules won't be installed because they're in the system directory
@@ -77,8 +77,13 @@ if ( $extlib->needs_install || $FORCE_RUN ) {
             $extlib->print( join(', ', @$uninstalled ) );
         }
     }
-    $extlib->save_last_run;
-    $extlib->print("Extlib updated.\n", 0);
+    if ( $rc == 0 ) {
+        $extlib->save_last_run;
+        $extlib->print("Extlib updated.\n", 0);
+    }
+    else {
+        $extlib->print("Error occurred while updating Extlib\n", 3);
+    }
 }
 else {
     $extlib->print("Extlib does not need updating.\n", 0);

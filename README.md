@@ -41,7 +41,7 @@ how to do that. It's probably a lot less work.
     # update extlib/etc/modules.yaml with any new packages
 
     # install code needed, if not already done
-    ./extlib/build-eblib
+    ./extlib/build-blib
 
     # execute the update script, saving to a log
     ./extlib/update-src  |& tee update-src.log
@@ -185,7 +185,7 @@ packages.
 
 Description of the layout and files of extlib/:
 
-    * extlib/eblib/lib/perl5/Extlib.pm
+    * extlib/blib/lib/perl5/Extlib.pm
 
       Code used to build the mirror and install
 

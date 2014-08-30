@@ -1,4 +1,4 @@
 *
 !.gitignore
 !Extlib.pm
-!Extlib
+!/Extlib

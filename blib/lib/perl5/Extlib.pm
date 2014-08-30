@@ -942,15 +942,18 @@ sub install {
     else {
         ( $force, $notforce ) = $self->modspec->force_notforce_modules;
     }
+    my $notforce_rc;
     if ( scalar @$notforce ) {
-        $self->install_modules( $notforce, undef, cpanm_args => $args{cpanm_args} );
+        $notforce_rc = $self->install_modules( $notforce, undef, cpanm_args => $args{cpanm_args} );
         # $self->copy_build_log;
     }
 
+    my $force_rc;
     if ( scalar @$force ) {
-        $self->install_modules( $force, 'force', cpanm_args => $args{cpanm_args} );
+        $force_rc = $self->install_modules( $force, 'force', cpanm_args => $args{cpanm_args} );
         # $self->copy_build_log('force.build.log');
     }
+    return $notforce_rc;
 }
 
 sub copy_build_log {
@@ -995,7 +998,9 @@ sub install_modules {
     );
     # warn "command => " . join(' ', @commands);
     system(@commands);
+    my $rc = $?;
     $self->print( "Finished installing modules\n", INFO );
+    return $rc;
 }
 
 =head2 install_for_update

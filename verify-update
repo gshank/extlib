@@ -9,7 +9,7 @@ After building new source, run this to make sure everything installs ok.
 ##================================================================
 use Cwd 'abs_path';
 use File::Spec::Functions ('catpath', 'splitpath');
-use lib catpath((splitpath(abs_path $0))[0, 1], 'eblib/lib/perl5');
+use lib catpath((splitpath(abs_path $0))[0, 1], 'blib/lib/perl5');
 my $PATH = (splitpath(abs_path $0))[0, 1];
 require "${PATH}extlib_config.pm";
 my $Config = extlib_config->Config;
