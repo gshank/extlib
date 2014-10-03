@@ -942,18 +942,18 @@ sub install {
     else {
         ( $force, $notforce ) = $self->modspec->force_notforce_modules;
     }
-    my $notforce_rc;
+    my $notforce_rc = 0;
     if ( scalar @$notforce ) {
         $notforce_rc = $self->install_modules( $notforce, undef, cpanm_args => $args{cpanm_args} );
         # $self->copy_build_log;
     }
 
-    my $force_rc;
+    my $force_rc = 0;
     if ( scalar @$force ) {
         $force_rc = $self->install_modules( $force, 'force', cpanm_args => $args{cpanm_args} );
         # $self->copy_build_log('force.build.log');
     }
-    return $notforce_rc;
+    return $notforce_rc || $force_rc;
 }
 
 sub copy_build_log {
@@ -996,7 +996,7 @@ sub install_modules {
         '--mirror', $mirror,
         @$modules,
     );
-    # warn "command => " . join(' ', @commands);
+    warn "command => " . join(' ', @commands);
     system(@commands);
     my $rc = $?;
     $self->print( "Finished installing modules\n", INFO );
@@ -1197,7 +1197,7 @@ sub update_metadata_fast  {
     my $errors = 0;
     my %prereqs;
     @prereqs{@$modules} = ();
-    $self->find_prereqs( \%installed_provides, $possibly_new, \%prereqs, $old_meta_modules, $to_remove );
+    $self->find_prereqs( \%installed_provides, $possibly_new, \%prereqs, $old_meta_modules, $to_remove, 'top' );
 
     # replace or add keys in old_meta_modules with newly installed dists
     foreach my $added_mod ( keys %$possibly_new ) {
@@ -1210,7 +1210,7 @@ sub update_metadata_fast  {
 }
 
 sub find_prereqs {
-    my ( $self, $installed_provides, $possibly_new, $prereqs, $old_meta_modules, $to_remove ) = @_;
+    my ( $self, $installed_provides, $possibly_new, $prereqs, $old_meta_modules, $to_remove, $top ) = @_;
 
     my $new_prereqs = {};
     foreach my $mod (keys %$prereqs) {
@@ -1223,7 +1223,9 @@ sub find_prereqs {
             # meta from extlib.json
             my $old_meta = $old_meta_modules->{$module_name};
             if ( $old_meta ) {
-                if ( $old_meta->{version} ne $new_meta->{version} ) {
+                # could be installing lower pinned version. could be leftover older versions in lib
+                if ( ($top && $old_meta->{version} ne $new_meta->{version} ) ||
+                     (version->parse($old_meta->{version}) < version->parse($new_meta->{version})) ) {
                     # keep track of removals
                     $to_remove->{$old_meta->{dist}} = $old_meta;
                     $self->print("\nRemoving: $module_name, version =>" . $old_meta->{version} . "\n", INFO);
